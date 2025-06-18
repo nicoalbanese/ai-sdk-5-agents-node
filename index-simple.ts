@@ -1,16 +1,16 @@
 import { openai } from "@ai-sdk/openai";
-import { stepCountIs, streamText, tool } from "ai";
+import { generateText, stepCountIs, tool } from "ai";
 import "dotenv/config";
 import fs from "fs/promises";
 import z from "zod";
 
 async function codingAgent(prompt: string) {
-  const result = streamText({
+  const result = await generateText({
     model: openai("gpt-4.1-mini"),
     prompt,
     system:
       "You are a coding agent. You will be working with js/ts projects. Your responses must be concise.",
-    stopWhen: stepCountIs(5),
+    stopWhen: stepCountIs(10),
     tools: {
       read_file: tool({
         description:
@@ -88,14 +88,7 @@ async function codingAgent(prompt: string) {
     },
   });
 
-  for await (const delta of result.fullStream) {
-    if (delta.type === "text") {
-      process.stdout.write(delta.text);
-    }
-    if (delta.type === "tool-call") {
-      console.log("Calling tool: " + delta.toolName);
-    }
-  }
+  return { response: result.text, steps: result.steps };
 }
 
 codingAgent("Tell me about this project?").catch(console.error);
